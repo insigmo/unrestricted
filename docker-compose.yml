@@ -4,7 +4,6 @@ services:
     container_name: dnscrypt
     restart: always
     command: "init -N example.com -E '127.0.0.1:5443'"
-    # command: "start"
     ports:
         - '5443:5443/udp'
         - '5443:5443/tcp'
@@ -12,5 +11,20 @@ services:
       - keys:/opt/encrypted-dns/etc/keys
     environment:
     - TZ='UTC'
+  adguardhome:
+    image: adguard/adguardhome
+    container_name: adguardhome
+    ports:
+      - 53:53/tcp
+      - 53:53/udp
+      - 784:784/udp
+      - 853:853/tcp
+      - 3000:3000/tcp
+      - 80:80/tcp
+      - 443:443/tcp
+    volumes:
+      - ./workdir:/opt/adguardhome/work
+      - ./confdir:/opt/adguardhome/conf
+    restart: unless-stopped
 volumes:
   keys:
