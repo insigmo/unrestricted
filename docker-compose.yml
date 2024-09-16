@@ -18,7 +18,7 @@ services:
     cap_add:
       - NET_ADMIN
     dns:
-      - unbound
+      - 10.2.0.150
 
   3xui:
     image: ghcr.io/mhsanaei/3x-ui:latest
@@ -33,7 +33,7 @@ services:
     network_mode: host
     restart: unless-stopped
     dns:
-      - adguardhome
+      - 10.2.0.150
 
   spoofdpi:
     image: debian:bookworm-slim
@@ -53,6 +53,9 @@ services:
     hostname: unbound
     volumes:
       - ./unbound:/opt/unbound/etc/unbound/
+    networks:
+      private_network:
+        ipv4_address: 10.2.0.200
     cap_add:
       - NET_ADMIN
     env_file: .env
@@ -75,3 +78,10 @@ services:
 #        ipv4_address: 10.2.0.100
 #    depends_on:
 #      - unbound
+
+networks:
+  private_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.2.0.0/24
