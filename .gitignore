@@ -1,3 +1,5 @@
 confdir/
 workdir/
-
+etc-pihole/
+etc-dnsmasq.d/
+cert/

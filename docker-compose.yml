@@ -1,18 +1,6 @@
 services:
-  dnscrypt:
-    image: jedisct1/dnscrypt-server:latest
-    container_name: dnscrypt
-    restart: always
-    command: "init -N example.com -E '127.0.0.1:5443'"
-    ports:
-        - '5443:5443/udp'
-        - '5443:5443/tcp'
-    volumes:
-      - keys:/opt/encrypted-dns/etc/keys
-    environment:
-    - TZ='UTC'
   adguardhome:
-    image: adguard/adguardhome
+    image: adguard/adguardhome:latest
     container_name: adguardhome
     ports:
       - 53:53/tcp
@@ -26,10 +14,16 @@ services:
       - ./workdir:/opt/adguardhome/work
       - ./confdir:/opt/adguardhome/conf
     restart: unless-stopped
-  3x-ui:
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+    dns:
+      - 10.2.0.200
+
+  3xui:
     image: ghcr.io/mhsanaei/3x-ui:latest
-    container_name: 3x-ui
-    hostname: yourhostname
+    container_name: 3xui
+    hostname: vpn
     volumes:
       - $PWD/db/:/etc/x-ui/
       - $PWD/cert/:/root/cert/
@@ -38,5 +32,56 @@ services:
     tty: true
     network_mode: host
     restart: unless-stopped
-volumes:
-  keys:
+    dns:
+      - 10.2.0.150
+
+  spoofdpi:
+    image: debian:bookworm-slim
+    container_name: spoofdpi
+    network_mode: host
+    restart: unless-stopped
+    ports:
+      - 8080:8080
+    volumes:
+      - $PWD/run_spoofdpi.sh:/entrypoint.sh
+    entrypoint: /entrypoint.sh
+
+  unbound:
+    image: mvance/unbound:latest
+    container_name: unbound
+    restart: unless-stopped
+    hostname: unbound
+    volumes:
+      - ./unbound:/opt/unbound/etc/unbound/
+    networks:
+      private_network:
+        ipv4_address: 10.2.0.200
+    cap_add:
+      - NET_ADMIN
+    env_file: .env
+#
+#  pihole:
+#    container_name: pihole
+#    image: pihole/pihole:latest
+#    restart: unless-stopped
+#    hostname: pihole
+#    dns:
+#      - 127.0.0.1
+#      - 10.2.0.200
+#    volumes:
+#      - ./etc-pihole/:/etc/pihole/
+#      - ./etc-dnsmasq.d/:/etc/dnsmasq.d/
+#    cap_add:
+#      - NET_ADMIN
+#    networks:
+#      private_network:
+#        ipv4_address: 10.2.0.100
+#    depends_on:
+#      - unbound
+
+networks:
+  private_network:
+    ipam:
+      driver: default
+      config:
+        - subnet: 10.2.0.0/24
