@@ -18,7 +18,7 @@ services:
     cap_add:
       - NET_ADMIN
     dns:
-      - 10.2.0.200
+      - unbound
 
   3xui:
     image: ghcr.io/mhsanaei/3x-ui:latest
@@ -33,7 +33,7 @@ services:
     network_mode: host
     restart: unless-stopped
     dns:
-      - 10.2.0.150
+      - adguardhome
 
   spoofdpi:
     image: debian:bookworm-slim
@@ -78,10 +78,3 @@ services:
 #        ipv4_address: 10.2.0.100
 #    depends_on:
 #      - unbound
-
-networks:
-  private_network:
-    ipam:
-      driver: default
-      config:
-        - subnet: 10.2.0.0/24
