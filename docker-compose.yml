@@ -1,24 +1,30 @@
 services:
+  3x-ui:
+    image: ghcr.io/mhsanaei/3x-ui:latest
+    container_name: 3x-ui
+    volumes:
+      - $PWD/db/:/etc/x-ui/
+      - $PWD/cert/:/root/cert/
+    environment:
+      XRAY_VMESS_AEAD_FORCED: "false"
+    tty: true
+    network_mode: host
+    restart: unless-stopped
+
   adguardhome:
     image: adguard/adguardhome:latest
     container_name: adguardhome
-    ports:
-      - 53:53/tcp
-      - 53:53/udp
-      - 784:784/udp
-      - 853:853/tcp
-      - 3000:3000/tcp
-      - 80:80/tcp
-      - 443:443/tcp
     volumes:
       - ./workdir:/opt/adguardhome/work
       - ./confdir:/opt/adguardhome/conf
     restart: unless-stopped
-    network_mode: host
     cap_add:
       - NET_ADMIN
+    networks:
+      private_network:
+        ipv4_address: 10.2.0.100
     dns:
-      - 10.2.0.150
+      - 10.2.0.200
 
   3xui:
     image: ghcr.io/mhsanaei/3x-ui:latest
@@ -33,18 +39,7 @@ services:
     network_mode: host
     restart: unless-stopped
     dns:
-      - 10.2.0.150
-
-  spoofdpi:
-    image: debian:bookworm-slim
-    container_name: spoofdpi
-    network_mode: host
-    restart: unless-stopped
-    ports:
-      - 8080:8080
-    volumes:
-      - $PWD/run_spoofdpi.sh:/entrypoint.sh
-    entrypoint: /entrypoint.sh
+      - 10.2.0.100
 
   unbound:
     image: mvance/unbound:latest
@@ -59,25 +54,6 @@ services:
     cap_add:
       - NET_ADMIN
     env_file: .env
-#
-#  pihole:
-#    container_name: pihole
-#    image: pihole/pihole:latest
-#    restart: unless-stopped
-#    hostname: pihole
-#    dns:
-#      - 127.0.0.1
-#      - 10.2.0.200
-#    volumes:
-#      - ./etc-pihole/:/etc/pihole/
-#      - ./etc-dnsmasq.d/:/etc/dnsmasq.d/
-#    cap_add:
-#      - NET_ADMIN
-#    networks:
-#      private_network:
-#        ipv4_address: 10.2.0.100
-#    depends_on:
-#      - unbound
 
 networks:
   private_network:
