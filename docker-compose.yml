@@ -1,33 +1,45 @@
 services:
-  adguardhome:
-    image: adguard/adguardhome:latest
-    container_name: adguardhome
-    volumes:
-      - ./workdir:/opt/adguardhome/work
-      - ./confdir:/opt/adguardhome/conf
-    restart: unless-stopped
-    cap_add:
-      - NET_ADMIN
-    networks:
-      private_network:
-        ipv4_address: 10.2.0.100
-    dns:
-      - 10.2.0.200
-
   3xui:
     image: ghcr.io/mhsanaei/3x-ui:latest
     container_name: 3xui
     hostname: vpn
     volumes:
-      - $PWD/db/:/etc/x-ui/
-      - $PWD/cert/:/root/cert/
+      - ./db/:/etc/x-ui/
+      - ./cert/:/root/cert/
     environment:
       XRAY_VMESS_AEAD_FORCED: "false"
     tty: true
     network_mode: host
     restart: unless-stopped
-    dns:
-      - 10.2.0.100
+    depends_on:
+      - adguardhome
+    cap_add:
+      - ALL
+    dns_search:
+      - adguardhome
+
+  adguardhome:
+    image: adguard/adguardhome:latest
+    container_name: adguardhome
+    ports:
+      - "53:53/tcp"
+      - "53:53/udp"
+      - "784:784/udp"
+      - "853:853/tcp"
+      - "3000:3000/tcp"
+      - "80:80/tcp"
+      - "443:443/tcp"
+    volumes:
+      - ./workdir:/opt/adguardhome/work
+      - ./confdir:/opt/adguardhome/conf
+      - ./cert/:/opt/adguardhome/cert
+    restart: unless-stopped
+    cap_add:
+      - ALL
+    depends_on:
+      - unbound
+    dns_search:
+      - unbound
 
   unbound:
     image: mvance/unbound:latest
@@ -35,17 +47,6 @@ services:
     restart: unless-stopped
     hostname: unbound
     volumes:
-      - ./unbound:/opt/unbound/etc/unbound/
-    networks:
-      private_network:
-        ipv4_address: 10.2.0.200
+      - ./unbound/:/opt/unbound/etc/unbound/
     cap_add:
-      - NET_ADMIN
-    env_file: .env
-
-networks:
-  private_network:
-    ipam:
-      driver: default
-      config:
-        - subnet: 10.2.0.0/24
+      - ALL
